@@ -1,0 +1,21 @@
+cmake_minimum_required(VERSION 3.10)
+project(square_dodger)
+
+set(CMAKE_CXX_STANDARD 17)
+
+find_package(SFML 3 COMPONENTS Graphics Window System REQUIRED)
+
+include_directories(include)
+
+add_executable(square_dodger
+    src/main.cpp
+    src/Game.cpp
+    src/Player.cpp
+    src/Obstacle.cpp
+)
+
+target_link_libraries(square_dodger 
+    SFML::Graphics
+    SFML::Window
+    SFML::System
+)
