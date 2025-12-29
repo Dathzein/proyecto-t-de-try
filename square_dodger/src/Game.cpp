@@ -164,7 +164,7 @@ void Game::render() {
   window.clear(
       sf::Color::White); // 1. Limpia el frame anterior con color blanco
 
-  window.draw(player.getShape()); // 2. Dibuja al jugador
+  window.draw(player.getSprite()); // 2. Dibuja al jugador
 
   // 3. Dibuja todos los obstáculos activos
   for (auto &obs : obstacles) {

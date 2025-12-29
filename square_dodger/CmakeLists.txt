@@ -19,3 +19,10 @@ target_link_libraries(square_dodger
     SFML::Window
     SFML::System
 )
+
+# Copia automática de assets al directorio del ejecutable (para ejecutar desde build/)
+add_custom_command(TARGET square_dodger POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+          ${CMAKE_SOURCE_DIR}/assets
+          $<TARGET_FILE_DIR:square_dodger>/assets
+)
