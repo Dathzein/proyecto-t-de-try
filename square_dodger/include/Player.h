@@ -33,6 +33,8 @@ private:
   bool isCrouching; // Bandera para saber si el jugador está agachado
   bool moveLeft;  // Bandera de estado: el jugador quiere moverse a la izquierda
   bool moveRight; // Bandera de estado: el jugador quiere moverse a la derecha
+  bool jumpHeld;  // Si el jugador está manteniendo presionada la tecla de salto
+  bool jumpCutApplied; // Evita aplicar el "cut" más de una vez por salto
 
   void setAnimation(AnimState newState);
   void applyFrame();

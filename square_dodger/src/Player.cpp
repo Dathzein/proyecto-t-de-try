@@ -27,6 +27,8 @@ Player::Player() : sprite(idleTexture) {
   isCrouching = false;                // No está agachado inicialmente
   moveLeft = false;                   // No se está moviendo a la izquierda
   moveRight = false;                  // No se está moviendo a la derecha
+  jumpHeld = false;
+  jumpCutApplied = false;
 
   animState = AnimState::Idle;
   frameIndex = 0;
@@ -55,10 +57,25 @@ void Player::handleInput(sf::Keyboard::Key key, bool isPressed) {
     }
   } else if (key ==
              sf::Keyboard::Key::Space) { // Si la tecla es Espacio (Saltar)
-    // Si se presiona, no está ya saltando y no está agachado
-    if (isPressed && !isJumping && !isCrouching) {
-      velocityY = -12;  // Aplica una fuerza negativa (hacia arriba)
-      isJumping = true; // Marca estado saltando
+    // Salto variable tipo Hollow Knight:
+    // - Al presionar: inicia salto con la misma fuerza máxima de siempre.
+    // - Al soltar rápido durante la subida: recorta la velocidad vertical para
+    //   lograr un salto más bajo.
+    if (isPressed) {
+      jumpHeld = true;
+      // Si se presiona, no está ya saltando y no está agachado
+      if (!isJumping && !isCrouching) {
+        velocityY = -12;  // Fuerza máxima (se mantiene la altura máxima actual)
+        isJumping = true; // Marca estado saltando
+        jumpCutApplied = false;
+      }
+    } else {
+      jumpHeld = false;
+      // Si soltó en subida, aplica "jump cut" una sola vez
+      if (isJumping && velocityY < 0.f && !jumpCutApplied) {
+        velocityY *= 0.35f; // mientras más chico, más "corto" el salto
+        jumpCutApplied = true;
+      }
     }
   }
 }
@@ -93,6 +110,7 @@ void Player::update() {
     feetPosition.y = groundFeetY; // Fija la posición en el suelo
     velocityY = 0;                         // Detiene la caída
     isJumping = false;                     // Permite volver a saltar
+    jumpCutApplied = false;
   }
 
   // Dirección (flip) y selección de animación
