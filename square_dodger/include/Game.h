@@ -1,8 +1,10 @@
 #pragma once                 // Directiva para incluir el archivo solo una vez
 #include "Obstacle.h"        // Incluye la clase Obstacle
 #include "Player.h"          // Incluye la clase Player
+#include "PlatformStrip.h"
 #include <SFML/Graphics.hpp> // Incluye la biblioteca gráfica de SFML
 #include <deque> // Incluye la estructura de datos deque (cola doble)
+#include <vector>
 
 class Game { // Definición de la clase Game (Juego principal)
 public:
@@ -21,6 +23,15 @@ private:
   Player player;                  // El objeto jugador
   std::deque<Obstacle> obstacles; // Lista de obstáculos en pantalla
   int spawnTimer; // Temporizador para controlar cuándo crear nuevos obstáculos
+
+  // Background
+  sf::Texture backgroundTexture;
+  sf::Sprite backgroundSprite;
+
+  // Tiles / plataformas decorativas
+  sf::Texture tilesetTexture;
+  std::vector<PlatformStrip> platforms;
+  int platformSpawnTimer;
 
   // Estado del Juego
   bool isGameOver; // Bandera: ¿Se acabó el juego?

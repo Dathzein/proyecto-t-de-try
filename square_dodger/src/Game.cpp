@@ -8,6 +8,7 @@ Game::Game()
     : window(sf::VideoMode(sf::Vector2u(800, 400)),
              "Square Dodger"), // Inicializa la ventana con resolución 800x400 y
                                // título
+      backgroundSprite(backgroundTexture),
       uiText(font),     // Inicializa texto de UI con la fuente
       scoreText(font) { // Inicializa texto de puntuación con la fuente
 
@@ -16,10 +17,51 @@ Game::Game()
   window.setFramerateLimit(
       60); // Limita la ejecución a 60 cuadros por segundo (FPS)
 
+  // Carga del fondo (tileset pack)
+  const char *bgPath1 = "assets/tilesets/platformer/background/Full_bgx32.png";
+  const char *bgPath2 =
+      "build/assets/tilesets/platformer/background/Full_bgx32.png";
+
+  bool bgLoaded = backgroundTexture.loadFromFile(bgPath1);
+  if (!bgLoaded) {
+    bgLoaded = backgroundTexture.loadFromFile(bgPath2);
+  }
+
+  if (!bgLoaded) {
+    std::cerr << "Failed to load background Full_bgx32.png (tried: " << bgPath1
+              << " and " << bgPath2 << ")" << std::endl;
+  } else {
+    // SFML 3: asegura que el sprite tome el rect correcto luego de cargar
+    backgroundSprite.setTexture(backgroundTexture, true);
+
+    auto texSize = backgroundTexture.getSize();
+    auto winSize = window.getSize();
+    if (texSize.x > 0 && texSize.y > 0) {
+      float scaleX =
+          static_cast<float>(winSize.x) / static_cast<float>(texSize.x);
+      float scaleY =
+          static_cast<float>(winSize.y) / static_cast<float>(texSize.y);
+      backgroundSprite.setScale({scaleX, scaleY});
+      backgroundSprite.setPosition({0.f, 0.f});
+    }
+  }
+
   // Carga de la fuente para textos
   if (!font.openFromFile("assets/Arial.ttf")) {
     // Muestra error en consola si falla la carga
     std::cerr << "Failed to load font" << std::endl;
+  }
+
+  // Carga del tileset (plataformas)
+  const char *tilesetPath1 = "assets/tilesets/platformer/tiles/Tileset.png";
+  const char *tilesetPath2 = "build/assets/tilesets/platformer/tiles/Tileset.png";
+  bool tilesLoaded = tilesetTexture.loadFromFile(tilesetPath1);
+  if (!tilesLoaded) {
+    tilesLoaded = tilesetTexture.loadFromFile(tilesetPath2);
+  }
+  if (!tilesLoaded) {
+    std::cerr << "Failed to load tileset Tileset.png (tried: " << tilesetPath1
+              << " and " << tilesetPath2 << ")" << std::endl;
   }
 
   // Configuración del texto de UI (Mensajes de fin de juego)
@@ -44,6 +86,8 @@ void Game::resetGame() {
   isGameOver = false; // Reinicia estado de Game Over
   spawnTimer = 0;     // Reinicia temporizador de generación de obstáculos
   obstacles.clear();  // Elimina todos los obstáculos de la lista
+  platforms.clear();
+  platformSpawnTimer = 0;
 
   // Crea un nuevo objeto Player, reiniciando su posición y estado
   player = Player();
@@ -93,6 +137,51 @@ void Game::update() {
     return;
 
   player.update(); // Actualiza físicas y movimiento del jugador
+
+  // --- Plataformas (tileset) ---
+  // Nota: por ahora son decorativas (no colisionan). Se mueven más lento que
+  // los obstáculos (-5 px/frame).
+  for (auto it = platforms.begin(); it != platforms.end();) {
+    it->update();
+    if (it->isOffscreen(-64.f)) {
+      it = platforms.erase(it);
+    } else {
+      ++it;
+    }
+  }
+
+  // Spawn de plataformas
+  if (platformSpawnTimer < 120) { // más espaciado que los obstáculos
+    platformSpawnTimer++;
+  } else {
+    // IDs de tiles usados en los mapas de ejemplo del pack (Tileset firstgid=1565):
+    // 1571/1572/1573 => tileId 6/7/8 (borde izq/medio/borde der).
+    // Esto nos da un "piso" con pasto encima.
+    const int leftId = 6;
+    const int midId = 7;
+    const int rightId = 8;
+
+    bool makeFloating = (rand() % 3) == 0; // ~33% islas flotantes
+    int len = makeFloating ? (3 + (rand() % 5)) : (6 + (rand() % 7));
+
+    float topY;
+    if (makeFloating) {
+      topY = 170.f + static_cast<float>(rand() % 90); // 170..259
+    } else {
+      // Suelo: el jugador tiene "pies" en y=340 y el tile mide 32 => top=308
+      topY = 308.f;
+    }
+
+    float startX = 820.f + static_cast<float>(rand() % 120);
+    float speedX = -2.0f; // más lento que obstáculos (-5)
+
+    if (tilesetTexture.getSize().x > 0) {
+      platforms.emplace_back(tilesetTexture, leftId, midId, rightId, len,
+                             sf::Vector2f{startX, topY}, speedX);
+    }
+
+    platformSpawnTimer = 0;
+  }
 
   // --- Lógica de Generación de Obstáculos ---
   if (spawnTimer <
@@ -163,6 +252,12 @@ void Game::update() {
 void Game::render() {
   window.clear(
       sf::Color::White); // 1. Limpia el frame anterior con color blanco
+
+  window.draw(backgroundSprite); // Fondo del escenario
+
+  for (const auto &p : platforms) {
+    p.draw(window);
+  }
 
   window.draw(player.getSprite()); // 2. Dibuja al jugador
 

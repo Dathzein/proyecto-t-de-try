@@ -12,6 +12,7 @@ add_executable(square_dodger
     src/Game.cpp
     src/Player.cpp
     src/Obstacle.cpp
+    src/PlatformStrip.cpp
 )
 
 target_link_libraries(square_dodger 

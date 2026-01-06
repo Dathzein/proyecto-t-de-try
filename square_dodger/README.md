@@ -9,6 +9,7 @@ Necesitas instalar **SFML 3** y **CMake** para compilar este proyecto.
 ## Guías de Instalación y Compilación por Sistema Operativo
 
 Selecciona tu sistema operativo:
+
 - [macOS](#macos)
 - [Linux (Ubuntu/Debian)](#linux-ubuntudebian)
 - [Windows](#windows)
@@ -101,25 +102,30 @@ cp -r ../assets .
 
 ### 2. Compilar el proyecto
 
-#### Con MSYS2 MinGW 64-bit (PowerShell):
+#### Con PowerShell (recomendado)
+
+> Tip: abre PowerShell en la raíz del repo, o navega directo a `square_dodger/`.
 
 ```powershell
 # Navegar al directorio del proyecto
-cd square_dodger
+cd .\square_dodger
 
 # Agregar MinGW al PATH (ajusta la ruta si es necesaria)
 $env:PATH = "C:\msys64\mingw64\bin;$env:PATH"
 
+# (Opcional) Si "cmake" no se reconoce, usa la ruta completa así:
+# & "C:\Program Files\CMake\bin\cmake.exe" -G "MinGW Makefiles" -S . -B build
+
 # Configurar CMake con MinGW
-"C:\Program Files\CMake\bin\cmake.exe" -G "MinGW Makefiles" -S . -B build
+cmake -G "MinGW Makefiles" -S . -B build
 
 # Compilar
-cd build
-C:\msys64\mingw64\bin\mingw32-make.exe
+cmake --build build
 
-# Copiar assets
-cd build
-cp -r ../assets .
+# Assets:
+# El proyecto copia automáticamente `assets/` al directorio del ejecutable (post-build).
+# Si por alguna razón no se copian, puedes hacerlo manualmente:
+# Copy-Item -Recurse -Force .\assets .\build\assets
 ```
 
 #### Alternativa con CMD:
@@ -127,6 +133,7 @@ cp -r ../assets .
 ```cmd
 cd square_dodger
 set PATH=C:\msys64\mingw64\bin;%PATH%
+REM Si cmake no está en PATH, usa la ruta completa:
 "C:\Program Files\CMake\bin\cmake.exe" -G "MinGW Makefiles" -S . -B build
 cd build
 mingw32-make.exe
@@ -136,10 +143,12 @@ xcopy /E /I ..\assets assets
 ### 3. Ejecutar el juego
 
 ```powershell
-.\square_dodger.exe
+# Importante: agrega MinGW al PATH para que encuentre las DLLs de SFML
+$env:PATH = "C:\msys64\mingw64\bin;$env:PATH"
+.\build\square_dodger.exe
 ```
 
-**Nota:** Asegúrate de que la carpeta `assets` esté en el mismo directorio que el ejecutable.
+**Nota:** Asegúrate de que la carpeta `assets` esté en el mismo directorio que el ejecutable (normalmente `build/assets`).
 
 ---
 
@@ -155,9 +164,15 @@ xcopy /E /I ..\assets assets
 ## Solución de Problemas
 
 ### Windows: Error "cmake no se reconoce"
+
 - Asegúrate de agregar CMake al PATH o usa la ruta completa: `"C:\Program Files\CMake\bin\cmake.exe"`
+- En PowerShell, para ejecutar un `.exe` con espacios en la ruta, usa el operador `&`:
+  ```powershell
+  & "C:\Program Files\CMake\bin\cmake.exe" --build build
+  ```
 
 ### Windows: Conflicto entre Visual Studio y MinGW
+
 - Si tienes ambos instalados, limpia el directorio build y especifica el generador:
   ```powershell
   Remove-Item -Recurse -Force build\*
@@ -165,6 +180,15 @@ xcopy /E /I ..\assets assets
   ```
 
 ### "Failed to load font" al ejecutar
+
 - Verifica que la carpeta `assets` esté en el mismo directorio que el ejecutable
 - En Windows: `Copy-Item -Recurse assets build\`
 - En Linux/macOS: `cp -r assets build/`
+
+### Windows: no abre la ventana / error por DLLs de SFML
+
+- Si usas SFML desde MSYS2, agrega `C:\msys64\mingw64\bin` al `PATH` antes de ejecutar:
+  ```powershell
+  $env:PATH = "C:\msys64\mingw64\bin;$env:PATH"
+  .\build\square_dodger.exe
+  ```
