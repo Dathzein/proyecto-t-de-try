@@ -18,8 +18,9 @@ Player::Player() : sprite(idleTexture) {
   }
 
   // Posición inicial: usamos coordenada de "pies" para mantener el contacto con
-  // el suelo constante (antes era y=300 con tamaño 40 => pies en y=340)
-  feetPosition = {100.f, 340.f};
+  // el suelo constante. Con el piso de tiles (32px), usamos y=308 para que los
+  // pies queden sobre el borde superior del tile.
+  feetPosition = {100.f, 308.f};
 
   velocityY = 0;                      // Inicializa la velocidad vertical en 0
   velocityX = 0;                      // Inicializa la velocidad horizontal en 0
@@ -103,7 +104,7 @@ void Player::update() {
   feetPosition.y += velocityY;
 
   // Colisión con el suelo
-  float groundFeetY = 340.0f; // pies siempre en el mismo suelo
+  float groundFeetY = 308.0f; // pies siempre en el mismo suelo (piso de tiles)
 
   // Si la posición Y supera el suelo
   if (feetPosition.y >= groundFeetY) {

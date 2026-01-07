@@ -91,6 +91,18 @@ void Game::resetGame() {
 
   // Crea un nuevo objeto Player, reiniciando su posición y estado
   player = Player();
+
+  // Piso inicial (tileset) para que el jugador camine sobre él desde el inicio
+  // Tiles usados: tileId 6/7/8 (borde izq/medio/borde der) del Tileset
+  if (tilesetTexture.getSize().x > 0) {
+    const int leftId = 6;
+    const int midId = 7;
+    const int rightId = 8;
+    const int len = 40;      // 40 * 32 = 1280px (cubre de sobra 800px)
+    const float topY = 308.f; // piso a la altura del jugador
+    platforms.emplace_back(tilesetTexture, leftId, midId, rightId, len,
+                           sf::Vector2f{0.f, topY}, 0.f /*static*/);
+  }
 }
 
 // Bucle principal de ejecución del juego
@@ -161,16 +173,9 @@ void Game::update() {
     const int midId = 7;
     const int rightId = 8;
 
-    bool makeFloating = (rand() % 3) == 0; // ~33% islas flotantes
-    int len = makeFloating ? (3 + (rand() % 5)) : (6 + (rand() % 7));
-
-    float topY;
-    if (makeFloating) {
-      topY = 170.f + static_cast<float>(rand() % 90); // 170..259
-    } else {
-      // Suelo: el jugador tiene "pies" en y=340 y el tile mide 32 => top=308
-      topY = 308.f;
-    }
+    // Solo islas flotantes (el piso ya existe desde resetGame)
+    int len = 3 + (rand() % 6); // 3..8 tiles
+    float topY = 170.f + static_cast<float>(rand() % 90); // 170..259
 
     float startX = 820.f + static_cast<float>(rand() % 120);
     float speedX = -2.0f; // más lento que obstáculos (-5)
