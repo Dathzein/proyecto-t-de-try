@@ -1,4 +1,5 @@
 #include "Player.h" // Incluye el encabezado de la clase Player
+#include <cmath>
 #include <iostream>
 
 // Constructor de la clase Player
@@ -30,6 +31,7 @@ Player::Player() : sprite(idleTexture) {
   moveRight = false;                  // No se está moviendo a la derecha
   jumpHeld = false;
   jumpCutApplied = false;
+  carryVelocityX = 0.f;
 
   animState = AnimState::Idle;
   frameIndex = 0;
@@ -82,7 +84,30 @@ void Player::handleInput(sf::Keyboard::Key key, bool isPressed) {
 }
 
 // Método de actualización lógica por frame
-void Player::update() {
+void Player::update(const std::vector<SupportSurface> &surfaces) {
+  // Si estamos parados sobre una plataforma en movimiento, que nos "arrastre"
+  // (si no, la plataforma se mueve debajo y parecería que el jugador patina).
+  carryVelocityX = 0.f;
+  if (!isJumping) {
+    const float eps = 0.5f;
+    float playerLeft = feetPosition.x - 20.f;
+    float playerRight = feetPosition.x + 20.f;
+    for (const auto &s : surfaces) {
+      float top = s.bounds.position.y;
+      if (std::abs(feetPosition.y - top) <= eps) {
+        float sLeft = s.bounds.position.x;
+        float sRight = s.bounds.position.x + s.bounds.size.x;
+        bool overlapX = !(playerRight <= sLeft || playerLeft >= sRight);
+        if (overlapX) {
+          carryVelocityX = s.velocityX;
+          break;
+        }
+      }
+    }
+  }
+
+  feetPosition.x += carryVelocityX;
+
   // Movimiento Horizontal
   velocityX = 0; // Reinicia velocidad horizontal
   if (moveLeft)
@@ -100,18 +125,46 @@ void Player::update() {
   if (feetPosition.x > 780.f)
     feetPosition.x = 780.f;
 
-  velocityY += 0.5f;          // Aplica gravedad (aumenta velocidad hacia abajo)
-  feetPosition.y += velocityY;
+  // Movimiento vertical + gravedad + colisión con plataformas
+  float prevFeetY = feetPosition.y;
+  velocityY += 0.5f; // gravedad
+  float newFeetY = feetPosition.y + velocityY;
 
-  // Colisión con el suelo
-  float groundFeetY = 308.0f; // pies siempre en el mismo suelo (piso de tiles)
+  // Si caemos, buscamos la "superficie" más alta sobre la que aterrizar
+  float chosenTop = 1e9f;
+  float chosenVelX = 0.f;
+  if (velocityY >= 0.f) {
+    float playerLeft = feetPosition.x - 20.f;
+    float playerRight = feetPosition.x + 20.f;
+    for (const auto &s : surfaces) {
+      float top = s.bounds.position.y;
+      // Aterrizaje: cruzamos el plano del "top" desde arriba hacia abajo
+      if (prevFeetY <= top && newFeetY >= top) {
+        float sLeft = s.bounds.position.x;
+        float sRight = s.bounds.position.x + s.bounds.size.x;
+        bool overlapX = !(playerRight <= sLeft || playerLeft >= sRight);
+        if (!overlapX)
+          continue;
 
-  // Si la posición Y supera el suelo
-  if (feetPosition.y >= groundFeetY) {
-    feetPosition.y = groundFeetY; // Fija la posición en el suelo
-    velocityY = 0;                         // Detiene la caída
-    isJumping = false;                     // Permite volver a saltar
+        // Elegimos el top más cercano (más bajo numéricamente) que sea el
+        // primero que toquemos; pero como y crece hacia abajo, queremos el top
+        // más "alto" (menor y) entre candidatos que cruzamos.
+        if (top < chosenTop) {
+          chosenTop = top;
+          chosenVelX = s.velocityX;
+        }
+      }
+    }
+  }
+
+  if (chosenTop < 1e8f) {
+    feetPosition.y = chosenTop;
+    velocityY = 0.f;
+    isJumping = false;
     jumpCutApplied = false;
+    carryVelocityX = chosenVelX;
+  } else {
+    feetPosition.y = newFeetY;
   }
 
   // Dirección (flip) y selección de animación

@@ -148,8 +148,6 @@ void Game::update() {
   if (isGameOver) // Si el juego terminó, no actualizamos nada más
     return;
 
-  player.update(); // Actualiza físicas y movimiento del jugador
-
   // --- Plataformas (tileset) ---
   // Nota: por ahora son decorativas (no colisionan). Se mueven más lento que
   // los obstáculos (-5 px/frame).
@@ -187,6 +185,19 @@ void Game::update() {
 
     platformSpawnTimer = 0;
   }
+
+  // Actualiza físicas y movimiento del jugador (con colisión de plataformas)
+  std::vector<Player::SupportSurface> surfaces;
+  surfaces.reserve(platforms.size() + 1);
+  for (const auto &p : platforms) {
+    surfaces.push_back(Player::SupportSurface{p.getBounds(), p.getVelocityX()});
+  }
+  // Fallback mínimo (si por algún motivo no hay plataformas cargadas)
+  if (surfaces.empty()) {
+    surfaces.push_back(Player::SupportSurface{
+        sf::FloatRect({-10000.f, 308.f}, {20000.f, 32.f}), 0.f});
+  }
+  player.update(surfaces);
 
   // --- Lógica de Generación de Obstáculos ---
   if (spawnTimer <

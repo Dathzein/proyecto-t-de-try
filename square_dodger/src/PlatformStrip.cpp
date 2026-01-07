@@ -15,9 +15,10 @@ sf::IntRect PlatformStrip::tileRect(int tileId) {
 PlatformStrip::PlatformStrip(const sf::Texture &tilesetTexture, int leftTileId,
                              int midTileId, int rightTileId, int lengthTiles,
                              sf::Vector2f topLeft, float speedX)
-    : tileset(&tilesetTexture), velocityX(speedX) {
+    : tileset(&tilesetTexture), velocityX(speedX), length(lengthTiles) {
   if (lengthTiles < 1)
     lengthTiles = 1;
+  length = lengthTiles;
 
   sprites.reserve(static_cast<size_t>(lengthTiles));
 
@@ -56,6 +57,17 @@ bool PlatformStrip::isOffscreen(float leftBoundX) const {
     rightmost = std::max(rightmost, s.getPosition().x + kTileSize);
   }
   return rightmost < leftBoundX;
+}
+
+sf::FloatRect PlatformStrip::getBounds() const {
+  if (sprites.empty())
+    return sf::FloatRect({0.f, 0.f}, {0.f, 0.f});
+  const auto &first = sprites.front();
+  float left = first.getPosition().x;
+  float top = first.getPosition().y;
+  return sf::FloatRect({left, top},
+                       {static_cast<float>(length * kTileSize),
+                        static_cast<float>(kTileSize)});
 }
 
 

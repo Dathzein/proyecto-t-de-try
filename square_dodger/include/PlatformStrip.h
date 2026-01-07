@@ -13,11 +13,14 @@ public:
   void update();
   void draw(sf::RenderTarget &target) const;
   bool isOffscreen(float leftBoundX) const;
+  sf::FloatRect getBounds() const;
+  float getVelocityX() const { return velocityX; }
 
 private:
   const sf::Texture *tileset;
   std::vector<sf::Sprite> sprites;
   float velocityX;
+  int length;
 
   static sf::IntRect tileRect(int tileId);
 };
