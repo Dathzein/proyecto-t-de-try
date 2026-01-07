@@ -88,20 +88,23 @@ void Game::resetGame() {
   obstacles.clear();  // Elimina todos los obstáculos de la lista
   platforms.clear();
   platformSpawnTimer = 0;
+  groundSpawnTimer = 0;
+  groundNextSpawnDelay = 1;
 
   // Crea un nuevo objeto Player, reiniciando su posición y estado
   player = Player();
 
-  // Piso inicial (tileset) para que el jugador camine sobre él desde el inicio
-  // Tiles usados: tileId 6/7/8 (borde izq/medio/borde der) del Tileset
+  // Piso inicial (segmento) para que el jugador no caiga al instante.
+  // Luego el piso se genera por segmentos con huecos para que puedas caer.
   if (tilesetTexture.getSize().x > 0) {
     const int leftId = 6;
     const int midId = 7;
     const int rightId = 8;
-    const int len = 40;      // 40 * 32 = 1280px (cubre de sobra 800px)
-    const float topY = 308.f; // piso a la altura del jugador
+    const int len = 30;        // 30 * 32 = 960px (cubre pantalla + margen)
+    const float topY = 308.f;  // piso a la altura del jugador
+    const float speedX = -2.f; // mismo scroll que islas
     platforms.emplace_back(tilesetTexture, leftId, midId, rightId, len,
-                           sf::Vector2f{0.f, topY}, 0.f /*static*/);
+                           sf::Vector2f{-80.f, topY}, speedX);
   }
 }
 
@@ -149,8 +152,6 @@ void Game::update() {
     return;
 
   // --- Plataformas (tileset) ---
-  // Nota: por ahora son decorativas (no colisionan). Se mueven más lento que
-  // los obstáculos (-5 px/frame).
   for (auto it = platforms.begin(); it != platforms.end();) {
     it->update();
     if (it->isOffscreen(-64.f)) {
@@ -160,7 +161,7 @@ void Game::update() {
     }
   }
 
-  // Spawn de plataformas
+  // Spawn de islas flotantes
   if (platformSpawnTimer < 120) { // más espaciado que los obstáculos
     platformSpawnTimer++;
   } else {
@@ -186,18 +187,54 @@ void Game::update() {
     platformSpawnTimer = 0;
   }
 
+  // Spawn de piso por segmentos (con huecos). Se mueve más lento que obstáculos.
+  // Con velocidad -2, la distancia entre inicios = delay * 2px.
+  // Elegimos delay en base al ancho del segmento + hueco para evitar solaparse.
+  if (groundSpawnTimer < groundNextSpawnDelay) {
+    groundSpawnTimer++;
+  } else {
+    const int leftId = 6;
+    const int midId = 7;
+    const int rightId = 8;
+    const float topY = 308.f;
+    const float startX = 820.f;
+    const float speedX = -2.0f;
+
+    // Segmento de piso (tiles) y hueco (tiles) hasta el siguiente
+    int lenTiles = 6 + (rand() % 10);   // 6..15
+    int gapTiles = rand() % 10;         // 0..9 (a veces huecos grandes)
+    if ((rand() % 5) == 0) gapTiles += 8; // 20%: hueco extra grande
+
+    if (tilesetTexture.getSize().x > 0) {
+      platforms.emplace_back(tilesetTexture, leftId, midId, rightId, lenTiles,
+                             sf::Vector2f{startX, topY}, speedX);
+    }
+
+    // delay = ceil((len*32 + gap*32)/2) frames, para no solapar y crear huecos
+    int widthPx = (lenTiles + gapTiles) * 32;
+    groundNextSpawnDelay = (widthPx + 1) / 2;
+    groundSpawnTimer = 0;
+  }
+
   // Actualiza físicas y movimiento del jugador (con colisión de plataformas)
   std::vector<Player::SupportSurface> surfaces;
   surfaces.reserve(platforms.size() + 1);
   for (const auto &p : platforms) {
     surfaces.push_back(Player::SupportSurface{p.getBounds(), p.getVelocityX()});
   }
-  // Fallback mínimo (si por algún motivo no hay plataformas cargadas)
-  if (surfaces.empty()) {
-    surfaces.push_back(Player::SupportSurface{
-        sf::FloatRect({-10000.f, 308.f}, {20000.f, 32.f}), 0.f});
-  }
   player.update(surfaces);
+
+  // Si cae al vacío (fuera de pantalla), pierde la partida
+  sf::FloatRect pb = player.getBounds();
+  if (pb.position.y > 520.f) {
+    isGameOver = true;
+    gameWon = false;
+    uiText.setString("FELL - Press R to Restart");
+    sf::FloatRect textRect = uiText.getLocalBounds();
+    uiText.setOrigin({textRect.position.x + textRect.size.x / 2.0f,
+                      textRect.position.y + textRect.size.y / 2.0f});
+    uiText.setPosition({400.f, 200.f});
+  }
 
   // --- Lógica de Generación de Obstáculos ---
   if (spawnTimer <

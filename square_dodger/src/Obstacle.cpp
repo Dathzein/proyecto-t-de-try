@@ -7,13 +7,13 @@ Obstacle::Obstacle(ObstacleType type) {
   // Configuración específica según el tipo de obstáculo
   if (type == ObstacleType::AIR) {
     shape.setFillColor(sf::Color::Yellow); // Color amarillo para diferenciarlo
-    shape.setPosition({800, 275});         // Posición elevada (Y=275)
+    shape.setPosition({800, 243});         // Posición elevada (alineada al piso)
     // Nota: El jugador de pie llega a Y=300 (colisiona).
     // El jugador agachado baja su altura, evitando el área 275-315.
   } else {
     // Por defecto (GROUND), color azul y posición a ras de suelo
     shape.setFillColor(sf::Color::Blue);
-    shape.setPosition({800, 290}); // Posición baja (Y=290), requiere salto
+    shape.setPosition({800, 268}); // Posición baja (sobre el piso), requiere salto
   }
 }
 

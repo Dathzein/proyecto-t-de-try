@@ -32,6 +32,8 @@ private:
   sf::Texture tilesetTexture;
   std::vector<PlatformStrip> platforms;
   int platformSpawnTimer;
+  int groundSpawnTimer;
+  int groundNextSpawnDelay;
 
   // Estado del Juego
   bool isGameOver; // Bandera: ¿Se acabó el juego?
